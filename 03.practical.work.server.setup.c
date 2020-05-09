@@ -1,100 +1,89 @@
-
-#include <windows.h>
-#include <ws2tcpip.h>
-#include <iphlpapi.h>
-#include <stdio.h>
-
-#include <WinSock2.h>
 #include <iostream>
-#pragma comment(lib, "Ws2_32.dll")
-
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <string>
+ 
 using namespace std;
+ 
 int main()
 {
-   cout<<"\t\t----- TCP SERVER  -------"<<endl;
-   cout<<endl;
-   //local variable
-   WSADATA wsaData;
-   int iWsaStartup;
-   int iWsaCleanup;
+    
+    int listening = socket(AF_INET, SOCK_STREAM, 0);
+    if (listening == -1)
+    {
+        cerr << "Can't create a socket! Quitting" << endl;
+        return -1;
+    }
+ 
    
-   SOCKET TCPServerSocket;
-   int iCloseSocket;
-   struct sockaddr_in TCPServerAdd;
-   struct sockaddr_in TCPClientAdd;
-   int iTCPClientAdd = sizeof(TCPClientAdd);
-   
-   int iBind;
-   int iListen;
-   SOCKET sAcceptSocket;
-    int iSend;
-	char SenderBuffer[512] = "HEllo from server";
-	int iSenderBuffer =strlen(SenderBuffer) + 1;
-	
-	int iRecv;
-	char RecvBuffer[512];
-	int iRecvBuffer = strlen(RecvBuffer) + 1;
-	// wsastarup fun
-	iWsaStartup = WSAStartup(MAKEWORD(2,2),&wsaData);
-	if(iWsaStartup != 0){
-		cout<<"WSAStartUp Failed"<<endl;
-	}
-	cout<<"WSAStartUp Success"<<endl;
-	// fill the structure
-	TCPServerAdd.sin_family = AF_INET;
-	TCPServerAdd.sin_addr.s_addr =inet_addr("127.0.0.1");
-	TCPServerAdd.sin_port = htons(8784);
-	//socket creation
-	TCPServerSocket = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
-	
-	if(TCPServerSocket == INVALID_SOCKET){
-		cout<<"TCP Server Socket Creation failed"<<WSAGetLastError()<<endl;
-		
-	}
-	cout<<"TCP Server Socket Creation Success"<<endl;
-	// bind fun
-	iBind = bind(TCPServerSocket,(SOCKADDR*)&TCPServerAdd,sizeof(TCPServerAdd));
-	if(iBind == SOCKET_ERROR){
-		cout<<"Binding failed & Error No->"<<WSAGetLastError()<<endl;
-	}
-	 cout<<"Binding Success"<<endl;
-	// listen fun
-	iListen = listen(TCPServerSocket,2);
-	if(iListen == SOCKET_ERROR){
-		cout<<"Listen Fun failed & Error No->"<<WSAGetLastError()<<endl;
-	}
-	cout<<"Listen Fun Success"<<endl;
-	// accept
-	sAcceptSocket = accept(TCPServerSocket,(SOCKADDR*)&TCPServerAdd,&iTCPClientAdd);
-	if(sAcceptSocket == INVALID_SOCKET){
-		cout<<"Accept Failed & Error No->"<<WSAGetLastError()<<endl;
-	}
-	cout<<"Success"<<endl;
-	// send data to client
-	iSend = send(sAcceptSocket,SenderBuffer,iSenderBuffer,0);
-	if(iSend == SOCKET_ERROR){
-		cout<<"Sending failed & Error No->"<<WSAGetLastError()<<endl;
-	}
-	cout<<"Data Sending Success"<<endl;
-	// recv dta from client
-	iRecv = recv(sAcceptSocket,RecvBuffer,iRecvBuffer,0);
-	if(iRecv == SOCKET_ERROR){
-		cout<<"Receive data failed & Error No->"<<WSAGetLastError()<<endl;
-	}
-	cout<<"Data Receive->"<<RecvBuffer<<endl;
-	// Close Server
-	iCloseSocket = closesocket(TCPServerSocket);
-	if(iCloseSocket == SOCKET_ERROR){
-		cout<<"Closing Failed & Error No->"<<WSAGetLastError()<<endl;
-	}
-	cout<<"Closing Socket Success"<<endl;
-	// Clearup
-	iWsaCleanup = WSACleanup();
-	if(iWsaCleanup == SOCKET_ERROR){
-		cout<<"Cleanup Fail & Error No->"<<WSAGetLastError()<<endl;
-	}
-	cout<<"Cleanup Success"<<endl;
-	
-	system("PAUSE");
-  return 0;
+    sockaddr_in severAddr;
+    severAddr.sin_family = AF_INET;
+    severAddr.sin_port = htons(8784);
+    inet_pton(AF_INET, "0.0.0.0", &severAddr.sin_addr);
+ 
+    bind(listening, (sockaddr*)&severAddr, sizeof(severAddr));
+ 
+    
+    listen(listening, SOMAXCONN);
+ 
+    
+    sockaddr_in client;
+    socklen_t clientSize = sizeof(client);
+ 
+    int clientSocket = accept(listening, (sockaddr*)&client, &clientSize);
+ 
+    char host[NI_MAXHOST];      
+    char service[NI_MAXSERV];   
+ 
+    memset(host, 0, NI_MAXHOST); 
+    memset(service, 0, NI_MAXSERV);
+ 
+    if (getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0)
+    {
+        cout << host << " connected on port " << service << endl;
+    }
+    else
+    {
+        inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
+        cout << host << " connected on port " << ntohs(client.sin_port) << endl;
+    }
+ 
+    
+    close(listening);
+ 
+    
+    char buf[2048];
+ 
+    while (true)
+    {
+        memset(buf, 0, 2048);
+ 
+        
+        int bytesReceived = recv(clientSocket, buf, 2048, 0);
+        if (bytesReceived == -1)
+        {
+            cerr << "Error in recv(). Quitting" << endl;
+            break;
+        }
+ 
+        if (bytesReceived == 0)
+        {
+            cout << "Client disconnected " << endl;
+            break;
+        }
+ 
+        cout << string(buf, 0, bytesReceived) << endl;
+ 
+        
+        send(clientSocket, buf, bytesReceived + 1, 0);
+    }
+ 
+    
+    close(clientSocket);
+ 
+    return 0;
 }
