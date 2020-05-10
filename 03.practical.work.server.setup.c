@@ -18,11 +18,13 @@ int main()
         cerr << "Can't create a socket! Quitting" << endl;
         return -1;
     }
- 
-   
+    
+    int Hport;
+    cout<<"enter port";
+    cin>>Hport;
     sockaddr_in severAddr;
     severAddr.sin_family = AF_INET;
-    severAddr.sin_port = htons(8784);
+    severAddr.sin_port = htons(Hport);
     inet_pton(AF_INET, "0.0.0.0", &severAddr.sin_addr);
  
     bind(listening, (sockaddr*)&severAddr, sizeof(severAddr));
