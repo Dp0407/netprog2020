@@ -19,13 +19,14 @@ int main()
     }
 
    
-    int port;
-	cin>>port;
+    int Hport;
+    cout<<"enter port";
+    cin>>port;
     string ipAddress = "127.0.0.1";
 
     sockaddr_in clientAddr;
     clientAddr.sin_family = AF_INET;
-    clientAddr.sin_port = htons(port);
+    clientAddr.sin_port = htons(Hport);
     inet_pton(AF_INET, ipAddress.c_str(), &clientAddr.sin_addr);
 
     
