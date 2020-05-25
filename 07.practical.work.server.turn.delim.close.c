@@ -11,7 +11,6 @@ using namespace std;
  
 int main()
 {
-    
     int listening = socket(AF_INET, SOCK_STREAM, 0);
     if (listening == -1)
     {
@@ -53,38 +52,36 @@ int main()
         inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
         cout << host << " connected on port " << ntohs(client.sin_port) << endl;
     }
- 
-    
     close(listening);
- 
     
     char buf[2048];
     while (true)
     {
         memset(buf, 0, 2048);
         int bytesReceived = recv(clientSocket, buf, 2048, 0);
-        
         if (bytesReceived == 0)
         {
             cout << "Client disconnected " << endl;
             break;
         }
-		int first = 0;
-		for (int i = 0; i <  bytesReceived ; i++) {
-			if (buf[i] == '\0') {
-				cout<<&buf[first]<<endl;
-				first = i;
-			}
-		}
-        cout <<"Client :"<< string(buf, 0, bytesReceived) << endl;
-		cout<<"Server :";
-		cin>>buf;
-		if (strcmp(buf, "/dc") == 0){
-	    cout<<"Disconnect...\n";
-		break;
+        int first = 0;
+	for (int i = 0; i <  bytesReceived ; i++)
+	{
+	    if (buf[i] == '\0')
+	    {
+	        cout<<&buf[first]<<endl;
+	        first = i;
 	    }
-		send(clientSocket, buf, bytesReceived + 1, 0);
-        
+	}
+        cout <<"Client :"<< string(buf, 0, bytesReceived) << endl;
+	cout<<"Server :";
+	cin>>buf;
+	if (strcmp(buf, "/dc") == 0)
+	{
+	    cout<<"Disconnect...\n";
+	    break;
+	}
+	send(clientSocket, buf, bytesReceived + 1, 0);  
     }
     close(clientSocket);
     return 0;
